@@ -10,6 +10,7 @@ import { monthStart, PLANS, planIsActive } from "../lib/plans.js";
 import { DAY_KEYS } from "../agent/time.js";
 import { getTemplate, TEMPLATES } from "../agent/templates.js";
 import { telegram } from "../channels/telegram.js";
+import { registerBotCommands } from "../channels/telegram-menu.js";
 import { verifyWhatsAppCredentials } from "../channels/whatsapp.js";
 import { monthlyAiUsage } from "../agent/engine.js";
 
@@ -107,6 +108,7 @@ businessRouter.post("/channels/telegram", asyncH(async (req, res) => {
   const me = await telegram.getMe(token).catch((e) => { throw Object.assign(new Error(`Token recusado pelo Telegram: ${e.message}`), { status: 400 }); });
   const secret = randomToken(24);
   await telegram.setWebhook(token, `${config.appUrl}/webhooks/telegram/${b.id}`, secret);
+  await registerBotCommands(token).catch(() => undefined);
   await prisma.business.update({ where: { id: b.id }, data: { telegramBotTokenEnc: encrypt(token), telegramBotUsername: me.username, telegramWebhookSecret: secret } });
   res.json({ ok: true, username: me.username });
 }));

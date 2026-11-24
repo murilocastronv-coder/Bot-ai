@@ -14,6 +14,7 @@ async function connectTelegram() {
   const calls = mockFetch({
     "/getMe": () => ({ ok: true, result: { id: 1, username: "salao_teste_bot" } }),
     "/setWebhook": () => ({ ok: true, result: true }),
+    "/setMyCommands": () => ({ ok: true, result: true }),
   });
   const r = await s.agent.post("/api/channels/telegram").send({ token: BOT_TOKEN }).expect(200);
   return { ...s, calls, username: r.body.username };
@@ -70,6 +71,68 @@ describe("Telegram Bot API", () => {
     expect(await sendDueReminders()).toBe(1);
     expect(await sendDueReminders()).toBe(0);
     expect(calls[0].body.text).toContain("Lembrete");
+  });
+});
+
+describe("menu do Telegram", () => {
+  const send = async (businessId: string, secret: string, text: string, id: number) =>
+    request(app).post(`/webhooks/telegram/${businessId}`).set("x-telegram-bot-api-secret-token", secret)
+      .send({ update_id: id, message: { message_id: id, chat: { id: 4242, type: "private" }, from: { first_name: "Ana Paula", language_code: "pt" }, text } }).expect(200);
+
+  it("/start mostra boas-vindas + teclado; botões respondem do banco sem IA; atendente transfere", async () => {
+    const { businessId, agent } = await connectTelegram();
+    await agent.post("/api/services").send({ name: "Corte", priceCents: 2500, durationMin: 30 }).expect(201);
+    await agent.post("/api/services").send({ name: "Coloração", priceCents: null }).expect(201);
+    await agent.post("/api/faqs").send({ question: "Aceitam cartão?", answer: "Sim, todos." }).expect(201);
+    const b = await prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    const calls = mockFetch({
+      "api.openai.com": () => { throw new Error("menu não deve usar IA"); },
+      "/sendChatAction": () => ({ ok: true, result: true }),
+      "/sendMessage": () => ({ ok: true, result: {} }),
+    });
+    const sent = () => calls.filter((c) => c.url.endsWith("/sendMessage")).map((c) => c.body);
+    await send(businessId, b.telegramWebhookSecret!, "/start", 1);
+    await expect.poll(() => sent().length, { timeout: 5000 }).toBe(1);
+    expect(sent()[0].text).toContain("Ana");
+    expect(sent()[0].text).toContain("Salão Teste");
+    const keys = sent()[0].reply_markup.keyboard.flat().map((k: any) => k.text);
+    expect(keys).toEqual(expect.arrayContaining(["📋 Serviços e preços", "🕐 Horários e endereço", "❓ Perguntas frequentes", "👤 Falar com atendente", "📅 Agendar horário"]));
+
+    await send(businessId, b.telegramWebhookSecret!, "📋 Serviços e preços", 2);
+    await expect.poll(() => sent().length, { timeout: 5000 }).toBe(2);
+    expect(sent()[1].text).toMatch(/Corte — 25,00/);
+    expect(sent()[1].text).toContain("Coloração — sob orçamento");
+
+    await send(businessId, b.telegramWebhookSecret!, "🕐 Horários e endereço", 3);
+    await expect.poll(() => sent().length, { timeout: 5000 }).toBe(3);
+    expect(sent()[2].text).toContain("Seg: 09:00–18:00");
+    expect(sent()[2].text).toContain("Dom: fechado");
+
+    await send(businessId, b.telegramWebhookSecret!, "/faq", 4);
+    await expect.poll(() => sent().length, { timeout: 5000 }).toBe(4);
+    expect(sent()[3].text).toContain("Aceitam cartão?");
+
+    await send(businessId, b.telegramWebhookSecret!, "👤 Falar com atendente", 5);
+    await expect.poll(() => sent().length, { timeout: 5000 }).toBe(5);
+    const conv = await prisma.conversation.findFirstOrThrow({ where: { businessId }, include: { messages: true } });
+    expect(conv.status).toBe("HUMAN");
+    expect(conv.messages).toHaveLength(10); // 5 do cliente + 5 respostas no histórico
+    expect(calls.some((c) => c.url.includes("openai"))).toBe(false);
+  });
+
+  it("botão Agendar inicia o fluxo com o agente de IA", async () => {
+    const { businessId } = await connectTelegram();
+    const b = await prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    const calls = mockFetch({
+      "api.openai.com": openaiScript([{ text: "Claro! Para qual serviço e dia?" }]),
+      "/sendChatAction": () => ({ ok: true, result: true }),
+      "/sendMessage": () => ({ ok: true, result: {} }),
+    });
+    await send(businessId, b.telegramWebhookSecret!, "📅 Agendar horário", 10);
+    await expect.poll(() => calls.find((c) => c.url.endsWith("/sendMessage")), { timeout: 5000 }).toBeTruthy();
+    const ai = calls.find((c) => c.url.includes("openai"))!;
+    expect(ai.body.messages.at(-1).content).toBe("Quero agendar um horário.");
+    expect(calls.find((c) => c.url.endsWith("/sendMessage"))!.body.reply_markup).toBeTruthy();
   });
 });
 

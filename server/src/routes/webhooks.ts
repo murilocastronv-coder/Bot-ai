@@ -5,6 +5,7 @@ import { decrypt, safeEqual } from "../lib/crypto.js";
 import { logError } from "../lib/log.js";
 import { handleIncoming } from "../agent/engine.js";
 import { telegram } from "../channels/telegram.js";
+import { handleMenu } from "../channels/telegram-menu.js";
 import { sendWhatsAppText, verifyMetaSignature } from "../channels/whatsapp.js";
 
 export const webhooksRouter = Router();
@@ -27,10 +28,19 @@ webhooksRouter.post("/telegram/:businessId", async (req: Request, res: Response)
   const token = decrypt(b.telegramBotTokenEnc);
   const chatId = String(msg.chat.id);
   const lc = String(msg.from?.language_code ?? "pt").slice(0, 2);
-  const text = msg.text.startsWith("/start") ? (START[lc] ?? START.pt) : msg.text;
+  const name = [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ");
   try {
     await telegram.sendChatAction(token, chatId);
-    const out = await handleIncoming({ businessId: b.id, channel: "TELEGRAM", externalId: chatId, text, name: [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ") });
+    // Menu (botões e comandos): /start, Serviços, Horários, FAQ, Atendente... respondidos sem IA
+    const menu = await handleMenu(b.id, chatId, msg.text, lc, name);
+    if (menu) {
+      const extra: Record<string, unknown> = { reply_markup: menu.keyboard };
+      if (menu.markdown) extra.parse_mode = "Markdown";
+      await telegram.sendMessage(token, chatId, menu.reply, extra).catch(() => telegram.sendMessage(token, chatId, menu.reply, { reply_markup: menu.keyboard }));
+      return;
+    }
+    const text = msg.text.startsWith("/") ? (START[lc] ?? START.pt) : msg.text;
+    const out = await handleIncoming({ businessId: b.id, channel: "TELEGRAM", externalId: chatId, text, name, languageHint: lc });
     if (out?.reply) await telegram.sendMessage(token, chatId, out.reply);
   } catch (e) { await logError("telegram-webhook", e, b.id); }
 });

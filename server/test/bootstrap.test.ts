@@ -11,6 +11,7 @@ describe("bootstrap por variáveis de ambiente", () => {
       "/getMe": () => ({ ok: true, result: { id: 1, username: "loja_bot" } }),
       "/setWebhook": (_u, i) => { hookUrl = i.json.url; return { ok: true, result: true }; },
       "/getWebhookInfo": () => ({ ok: true, result: { url: hookUrl } }),
+      "/setMyCommands": () => ({ ok: true, result: true }),
     });
     await runBootstrap();
     await runBootstrap();
@@ -18,6 +19,7 @@ describe("bootstrap por variáveis de ambiente", () => {
     expect(u.role).toBe("SUPERADMIN");
     expect(u.business).toMatchObject({ name: "Loja X", template: "barber", plan: "BUSINESS", telegramBotUsername: "loja_bot" });
     expect(calls.filter((c) => c.url.endsWith("/setWebhook"))).toHaveLength(1);
+    expect(calls.filter((c) => c.url.endsWith("/setMyCommands")).length).toBe(8); // 4 idiomas x 2 inicializações
     for (const k of ["BOOTSTRAP_OWNER_EMAIL", "BOOTSTRAP_OWNER_PASSWORD", "BOOTSTRAP_BUSINESS_NAME", "BOOTSTRAP_TEMPLATE", "TELEGRAM_BOT_TOKEN"]) delete process.env[k];
   });
 });
