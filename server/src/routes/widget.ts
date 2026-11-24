@@ -1,5 +1,5 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../lib/db.js";
 import { asyncH } from "../lib/auth.js";
@@ -8,7 +8,7 @@ import { handleIncoming } from "../agent/engine.js";
 
 /** API pública do widget. Identificação: widgetKey (público) + sessionId aleatório do navegador. */
 export const widgetRouter = Router();
-const limiter = rateLimit({ windowMs: 60000, limit: config.isProd ? 20 : 1000, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => `${req.ip}:${req.params.key}` });
+const limiter = rateLimit({ windowMs: 60000, limit: config.isProd ? 20 : 1000, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? "")}:${req.params.key}` });
 const session = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/);
 
 widgetRouter.use((req, res, next) => { res.setHeader("access-control-allow-origin", "*"); res.setHeader("access-control-allow-headers", "content-type"); if (req.method === "OPTIONS") return res.sendStatus(204); next(); });
