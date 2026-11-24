@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  STAFF
+  SUPERADMIN
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+}
+
+enum Channel {
+  WIDGET
+  WHATSAPP
+  TELEGRAM
+}
+
+enum ConversationStatus {
+  BOT
+  HUMAN
+  CLOSED
+}
+
+enum ContactStatus {
+  NEW
+  LEAD
+  QUALIFIED
+  CUSTOMER
+  LOST
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  name              String
+  role              Role      @default(OWNER)
+  emailVerifiedAt   DateTime?
+  emailVerifyToken  String?   @unique
+  resetTokenHash    String?   @unique
+  resetTokenExpires DateTime?
+  businessId        String?
+  business          Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now())
+}
+
+model Business {
+  id                   String   @id @default(cuid())
+  name                 String
+  template             String   @default("services")
+  address              String   @default("")
+  phone                String   @default("")
+  openingHours         Json     @default("{}")
+  personality          String   @default("Cordial, profissional e objetivo.")
+  languages            String[] @default(["pt", "fr", "en", "es"])
+  customInstructions   String   @default("")
+  agentEnabled         Boolean  @default(true)
+  blocked              Boolean  @default(false)
+  timezone             String   @default("Europe/Paris")
+  slotMinutes          Int      @default(30)
+  widgetKey            String   @unique @default(cuid())
+
+  plan                 Plan     @default(FREE)
+  trialEndsAt          DateTime
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  subscriptionStatus   String   @default("trialing")
+  currentPeriodEnd     DateTime?
+
+  // Telegram (bot próprio da empresa criado no @BotFather)
+  telegramBotTokenEnc  String?
+  telegramBotUsername  String?
+  telegramWebhookSecret String? @unique
+
+  // WhatsApp Business Cloud API (Meta)
+  waPhoneNumberId      String?  @unique
+  waAccessTokenEnc     String?
+
+  createdAt            DateTime @default(now())
+
+  users         User[]
+  services      Service[]
+  faqs          Faq[]
+  documents     KnowledgeDoc[]
+  contacts      Contact[]
+  conversations Conversation[]
+  bookings      Booking[]
+  quotes        QuoteRequest[]
+  usage         UsageRecord[]
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  priceCents  Int?
+  priceNote   String   @default("")
+  durationMin Int      @default(30)
+  bookable    Boolean  @default(true)
+  @@index([businessId])
+}
+
+model Faq {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  question   String
+  answer     String
+  @@index([businessId])
+}
+
+model KnowledgeDoc {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  filename   String
+  content    String
+  createdAt  DateTime @default(now())
+  @@index([businessId])
+}
+
+model Contact {
+  id                String        @id @default(cuid())
+  businessId        String
+  business          Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  channel           Channel
+  externalId        String
+  name              String        @default("")
+  phone             String        @default("")
+  email             String        @default("")
+  language          String        @default("")
+  serviceInterest   String        @default("")
+  status            ContactStatus @default(NEW)
+  marketingConsent  Boolean       @default(false)
+  consentAt         DateTime?
+  notes             String        @default("")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  conversations     Conversation[]
+  bookings          Booking[]
+  quotes            QuoteRequest[]
+  @@unique([businessId, channel, externalId])
+  @@index([businessId])
+}
+
+model Conversation {
+  id            String             @id @default(cuid())
+  businessId    String
+  business      Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contactId     String
+  contact       Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channel       Channel
+  status        ConversationStatus @default(BOT)
+  lastMessageAt DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+  messages      Message[]
+  @@index([businessId, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // "customer" | "assistant" | "human" | "system"
+  content        String
+  createdAt      DateTime     @default(now())
+  @@index([conversationId, createdAt])
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contactId    String
+  contact      Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  serviceName  String
+  startsAt     DateTime
+  endsAt       DateTime
+  status       BookingStatus @default(CONFIRMED)
+  reminderSent Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  @@index([businessId, startsAt])
+}
+
+model QuoteRequest {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  serviceName String
+  details     String
+  status      String   @default("open")
+  createdAt   DateTime @default(now())
+  @@index([businessId])
+}
+
+model UsageRecord {
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  promptTokens     Int
+  completionTokens Int
+  costMicroUsd     Int
+  createdAt        DateTime @default(now())
+  @@index([businessId, createdAt])
+}
+
+model ProcessedWebhook {
+  id        String   @id
+  createdAt DateTime @default(now())
+}
+
+model ErrorLog {
+  id         String   @id @default(cuid())
+  source     String
+  message    String
+  businessId String?
+  createdAt  DateTime @default(now())
+}

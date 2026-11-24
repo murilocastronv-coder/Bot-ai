@@ -1,0 +1,2 @@
+import { defineConfig } from "vitest/config";
+export default defineConfig({ test: { fileParallelism: false, testTimeout: 20000, setupFiles: ["./test/setup.ts"], globalSetup: ["./test/global-setup.ts"] } });

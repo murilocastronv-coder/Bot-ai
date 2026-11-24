@@ -1,0 +1,55 @@
+# Deploy GRATUITO no Render (serviço web free).
+# Banco: usa um esquema separado ("botai") dentro do PostgreSQL já existente
+# "muonline-teste-db" — não cria custo novo e não toca nas tabelas do jogo.
+services:
+  - type: web
+    name: bot-ai
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: >-
+      cd server && npm ci --include=dev && npx prisma generate && npm run build &&
+      cd ../web && npm ci --include=dev && npm run build
+    startCommand: cd server && export DATABASE_URL="${DATABASE_URL}?schema=botai" && npx prisma migrate deploy && node dist/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: muonline-teste-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false
+      # IA gratuita: Groq (https://console.groq.com/keys), compatível com a API da OpenAI
+      - key: AI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: AI_MODEL
+        value: llama-3.3-70b-versatile
+      - key: AI_API_KEY
+        sync: false
+      - key: OPENAI_COST_IN_PER_MTOK_USD
+        value: "0"
+      - key: OPENAI_COST_OUT_PER_MTOK_USD
+        value: "0"
+      # sem servidor de e-mail: contas já nascem verificadas
+      - key: EMAIL_VERIFICATION
+        value: "off"
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+      # conta do dono + negócio + bot criados automaticamente na 1ª inicialização
+      - key: BOOTSTRAP_OWNER_EMAIL
+        sync: false
+      - key: BOOTSTRAP_OWNER_PASSWORD
+        sync: false
+      - key: BOOTSTRAP_BUSINESS_NAME
+        value: Meu Negócio
+      - key: BOOTSTRAP_TEMPLATE
+        value: services
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
