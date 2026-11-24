@@ -1,6 +1,6 @@
 # Deploy GRATUITO no Render (serviço web free).
 # Banco: usa um esquema separado ("botai") dentro do PostgreSQL já existente
-# "muonline-teste-db" — não cria custo novo e não toca nas tabelas do jogo.
+# "solana-devbot-db" — não cria custo novo e não toca nas tabelas do jogo.
 services:
   - type: web
     name: bot-ai
@@ -20,7 +20,7 @@ services:
         value: "22"
       - key: DATABASE_URL
         fromDatabase:
-          name: muonline-teste-db
+          name: solana-devbot-db
           property: connectionString
       - key: JWT_SECRET
         generateValue: true

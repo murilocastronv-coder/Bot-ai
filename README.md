@@ -45,7 +45,7 @@ Não é preciso pedir aprovação ao Telegram. Limitações: o bot só responde 
 |---|---|---|
 | Hospedagem | Render, plano **free** | Hiberna após 15 min sem acesso; a 1ª mensagem depois disso demora ~1 min (o Telegram reenvia sozinho). Para ficar sempre acordado, cadastre `https://SEU-APP.onrender.com/health` num monitor grátis (ex.: cron-job.org ou UptimeRobot) a cada 10 min. |
 | IA | **Groq** (`llama-3.3-70b-versatile`): chave grátis, sem cartão, em https://console.groq.com/keys | Limites diários do plano grátis. Alternativa: Google Gemini (`AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai`, `AI_MODEL=gemini-2.0-flash`). |
-| Banco | Esquema `botai` no PostgreSQL já existente | — |
+| Banco | Esquema `botai` no PostgreSQL já existente `solana-devbot-db` | — |
 | E-mail | `EMAIL_VERIFICATION=off` | Sem confirmação de e-mail nem recuperação de senha por e-mail. |
 
 As variáveis `BOOTSTRAP_*` e `TELEGRAM_BOT_TOKEN` criam automaticamente, na primeira inicialização, a conta do dono (administrador, plano Business), o negócio, e conectam o bot do Telegram.
