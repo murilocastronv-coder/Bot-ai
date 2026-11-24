@@ -1,6 +1,6 @@
 /** Detecção leve de idioma (fr, pt, en, es) por palavras frequentes. */
 const WORDS: Record<string, string[]> = {
-  pt: ["olá", "ola", "obrigado", "obrigada", "você", "voce", "quero", "não", "nao", "por favor", "bom dia", "boa tarde", "quanto", "horário", "agendar", "tem", "preço", "é", "uma", "para", "com", "meu", "minha", "está"],
+  pt: ["olá", "ola", "oi", "sim", "obrigado!", "tudo", "bem", "gostaria", "queria", "vocês", "voces", "obrigado", "obrigada", "você", "voce", "quero", "não", "nao", "por favor", "bom dia", "boa tarde", "quanto", "horário", "agendar", "tem", "preço", "é", "uma", "para", "com", "meu", "minha", "está"],
   fr: ["bonjour", "merci", "je", "vous", "voudrais", "est-ce", "pour", "avec", "rendez-vous", "combien", "prix", "oui", "non", "s'il", "c'est", "le", "la", "les", "une", "des", "quel", "quelle", "horaires"],
   en: ["hello", "hi", "thanks", "thank", "you", "want", "would", "like", "please", "the", "and", "how", "much", "price", "book", "appointment", "what", "is", "are", "can", "my", "i"],
   es: ["hola", "gracias", "quiero", "usted", "por favor", "buenos", "cuánto", "cuanto", "precio", "cita", "reservar", "el", "los", "las", "una", "para", "con", "mi", "está", "qué", "horario", "tienen"],

@@ -36,12 +36,12 @@ export async function runBootstrap() {
     const sameToken = b.telegramBotTokenEnc && decrypt(b.telegramBotTokenEnc) === token;
     const url = `${config.appUrl}/webhooks/telegram/${b.id}`;
     const info = sameToken ? await fetch(`${config.telegramApiBase}/bot${token}/getWebhookInfo`).then((r) => r.json()).catch(() => null) as any : null;
-    if (sameToken && info?.result?.url === url) { await registerBotCommands(token); return; } // já conectado
+    if (sameToken && info?.result?.url === url) { await registerBotCommands(token, b.languages[0]); return; } // já conectado
     const me = await telegram.getMe(token);
     const secret = sameToken && b.telegramWebhookSecret ? b.telegramWebhookSecret : randomToken(24);
     await telegram.setWebhook(token, url, secret);
     await prisma.business.update({ where: { id: b.id }, data: { telegramBotTokenEnc: encrypt(token), telegramBotUsername: me.username, telegramWebhookSecret: secret } });
-    await registerBotCommands(token);
+    await registerBotCommands(token, b.languages[0]);
     console.log(`[bootstrap] bot @${me.username} conectado ao webhook ${url}`);
   } catch (e) { await logError("bootstrap", e); }
 }

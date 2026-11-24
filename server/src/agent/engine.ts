@@ -71,7 +71,7 @@ export async function handleIncoming(m: IncomingMessage): Promise<AgentOutcome |
   if (!planIsActive(business) || used >= plan.aiResponses || !plan.channels.includes(m.channel)) {
     // Sem IA disponível: resposta fixa + transferência para humano (sem custo de IA).
     await prisma.conversation.update({ where: { id: conv.id }, data: { status: "HUMAN" } });
-    return saveReply(conv.id, business.id, FALLBACK[contact.language] ?? FALLBACK.pt, true);
+    return saveReply(conv.id, business.id, FALLBACK[contact.language || business.languages[0]] ?? FALLBACK.pt, true);
   }
 
   if (looksLikeInjection(text)) await logError("prompt-injection-suspect", `conv=${conv.id}: ${text.slice(0, 200)}`, business.id);
@@ -105,14 +105,14 @@ export async function handleIncoming(m: IncomingMessage): Promise<AgentOutcome |
       }
     }
     await prisma.usageRecord.create({ data: { businessId: business.id, promptTokens: pin, completionTokens: pout, costMicroUsd: costMicroUsd(pin, pout) } });
-    if (!reply) reply = FALLBACK[contact.language] ?? FALLBACK.pt;
+    if (!reply) reply = FALLBACK[contact.language || business.languages[0]] ?? FALLBACK.pt;
     if (ctx.handoff) publish(bizKey(business.id), { type: "handoff", conversationId: conv.id });
     return saveReply(conv.id, business.id, reply, ctx.handoff);
   } catch (err) {
     await logError("agent", err, business.id);
     await prisma.conversation.update({ where: { id: conv.id }, data: { status: "HUMAN" } });
     publish(bizKey(business.id), { type: "handoff", conversationId: conv.id });
-    return saveReply(conv.id, business.id, FALLBACK[contact.language] ?? FALLBACK.pt, true);
+    return saveReply(conv.id, business.id, FALLBACK[contact.language || business.languages[0]] ?? FALLBACK.pt, true);
   }
 }
 

@@ -15,6 +15,7 @@ export const telegram = {
     tg(token, "setWebhook", { url, secret_token: secret, allowed_updates: ["message"], drop_pending_updates: true }),
   deleteWebhook: (token: string) => tg(token, "deleteWebhook", {}),
   sendMessage: (token: string, chatId: string, text: string, extra: Record<string, unknown> = {}) => tg(token, "sendMessage", { chat_id: chatId, text: text.slice(0, 4096), ...extra }),
+  deleteMyCommands: (token: string, languageCode: string) => tg(token, "deleteMyCommands", { language_code: languageCode }),
   setMyCommands: (token: string, commands: { command: string; description: string }[], languageCode?: string) =>
     tg(token, "setMyCommands", { commands, ...(languageCode ? { language_code: languageCode } : {}) }),
   sendChatAction: (token: string, chatId: string) => tg(token, "sendChatAction", { chat_id: chatId, action: "typing" }).catch(() => undefined),

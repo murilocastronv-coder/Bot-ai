@@ -39,8 +39,8 @@ webhooksRouter.post("/telegram/:businessId", async (req: Request, res: Response)
       await telegram.sendMessage(token, chatId, menu.reply, extra).catch(() => telegram.sendMessage(token, chatId, menu.reply, { reply_markup: menu.keyboard }));
       return;
     }
-    const text = msg.text.startsWith("/") ? (START[lc] ?? START.pt) : msg.text;
-    const out = await handleIncoming({ businessId: b.id, channel: "TELEGRAM", externalId: chatId, text, name, languageHint: lc });
+    const text = msg.text.startsWith("/") ? (START[b.languages[0]] ?? START.pt) : msg.text;
+    const out = await handleIncoming({ businessId: b.id, channel: "TELEGRAM", externalId: chatId, text, name, languageHint: b.languages[0] });
     if (out?.reply) await telegram.sendMessage(token, chatId, out.reply);
   } catch (e) { await logError("telegram-webhook", e, b.id); }
 });

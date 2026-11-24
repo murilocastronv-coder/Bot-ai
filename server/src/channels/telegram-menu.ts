@@ -73,8 +73,10 @@ export async function handleMenu(businessId: string, chatId: string, text: strin
   if (!b || b.blocked) return null;
   const tpl = getTemplate(b.template);
   const opts = { booking: tpl.usesBooking && PLANS[b.plan].booking, quotes: tpl.usesQuotes };
-  const prior = await prisma.contact.findUnique({ where: { businessId_channel_externalId: { businessId, channel: "TELEGRAM", externalId: chatId } } });
-  const lang = asLang(prior?.language || tgLang);
+  // Menu sempre no idioma principal do negócio (1º da lista; padrão português),
+  // não no idioma do celular do cliente. A IA continua respondendo no idioma que o cliente escrever.
+  void tgLang;
+  const lang = asLang(b.languages[0]);
   const t = T[lang];
   const kb = menuKeyboard(lang, opts);
   const base = { businessId, channel: "TELEGRAM" as const, externalId: chatId, name, languageHint: lang };
@@ -89,6 +91,8 @@ export async function handleMenu(businessId: string, chatId: string, text: strin
   let reply = "";
   let handoff = false;
   if (action === "menu") {
+    // /start volta a conversa para o idioma principal
+    if (opened.contact.language !== lang) await prisma.contact.update({ where: { id: opened.contact.id }, data: { language: lang } });
     const first = name.split(" ")[0];
     reply = t.welcome.replace("{n}", first ? ` ${first}` : "").replace("{b}", b.name);
   } else if (action === "services") {
@@ -109,8 +113,9 @@ export async function handleMenu(businessId: string, chatId: string, text: strin
   return { reply, keyboard: kb, markdown: action === "menu" };
 }
 
-/** Registra os comandos do botão "Menu" do Telegram nos 4 idiomas (padrão: português). */
-export async function registerBotCommands(token: string) {
-  await telegram.setMyCommands(token, BOT_COMMANDS("pt"));
-  for (const l of ["fr", "en", "es"] as L[]) await telegram.setMyCommands(token, BOT_COMMANDS(l), l);
+/** Registra os comandos do botão "Menu" do Telegram no idioma principal do negócio. */
+export async function registerBotCommands(token: string, primary: string = "pt") {
+  await telegram.setMyCommands(token, BOT_COMMANDS(asLang(primary)));
+  // remove versões por idioma do celular, para todos verem o idioma principal
+  for (const l of ["pt", "fr", "en", "es"]) await telegram.deleteMyCommands(token, l);
 }

@@ -15,6 +15,7 @@ async function connectTelegram() {
     "/getMe": () => ({ ok: true, result: { id: 1, username: "salao_teste_bot" } }),
     "/setWebhook": () => ({ ok: true, result: true }),
     "/setMyCommands": () => ({ ok: true, result: true }),
+    "/deleteMyCommands": () => ({ ok: true, result: true }),
   });
   const r = await s.agent.post("/api/channels/telegram").send({ token: BOT_TOKEN }).expect(200);
   return { ...s, calls, username: r.body.username };
@@ -118,6 +119,19 @@ describe("menu do Telegram", () => {
     expect(conv.status).toBe("HUMAN");
     expect(conv.messages).toHaveLength(10); // 5 do cliente + 5 respostas no histórico
     expect(calls.some((c) => c.url.includes("openai"))).toBe(false);
+  });
+
+  it("celular em francês recebe o menu em português (idioma principal do negócio)", async () => {
+    const { businessId } = await connectTelegram();
+    const b = await prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    const calls = mockFetch({ "/sendChatAction": () => ({ ok: true, result: true }), "/sendMessage": () => ({ ok: true, result: {} }) });
+    await request(app).post(`/webhooks/telegram/${businessId}`).set("x-telegram-bot-api-secret-token", b.telegramWebhookSecret!)
+      .send({ update_id: 77, message: { message_id: 1, chat: { id: 9, type: "private" }, from: { first_name: "Léa", language_code: "fr" }, text: "/start" } }).expect(200);
+    await expect.poll(() => calls.find((c) => c.url.endsWith("/sendMessage")), { timeout: 5000 }).toBeTruthy();
+    const m = calls.find((c) => c.url.endsWith("/sendMessage"))!.body;
+    expect(m.text).toContain("Sou o assistente virtual");
+    expect(m.reply_markup.keyboard.flat().map((k: any) => k.text)).toContain("📋 Serviços e preços");
+    expect((await prisma.contact.findFirstOrThrow({ where: { businessId } })).language).toBe("pt");
   });
 
   it("botão Agendar inicia o fluxo com o agente de IA", async () => {

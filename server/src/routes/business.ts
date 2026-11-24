@@ -108,7 +108,7 @@ businessRouter.post("/channels/telegram", asyncH(async (req, res) => {
   const me = await telegram.getMe(token).catch((e) => { throw Object.assign(new Error(`Token recusado pelo Telegram: ${e.message}`), { status: 400 }); });
   const secret = randomToken(24);
   await telegram.setWebhook(token, `${config.appUrl}/webhooks/telegram/${b.id}`, secret);
-  await registerBotCommands(token).catch(() => undefined);
+  await registerBotCommands(token, b.languages[0]).catch(() => undefined);
   await prisma.business.update({ where: { id: b.id }, data: { telegramBotTokenEnc: encrypt(token), telegramBotUsername: me.username, telegramWebhookSecret: secret } });
   res.json({ ok: true, username: me.username });
 }));
