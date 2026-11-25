@@ -251,3 +251,21 @@ async def test_throttle_blocks_flood():
     for _ in range(10):
         await mw(handler, object(), {"event_from_user": U()})
     assert len(calls) == 3
+
+
+async def test_support_goes_to_admin_by_username(db, fake_bot, monkeypatch):
+    import config
+    monkeypatch.setattr(config.settings, "admin_usernames", ["murilocastronv"])
+    monkeypatch.setattr(config.settings, "support_contact", "@Murilocastronv")
+    bot, session = fake_bot
+    h = Harness(db, bot, session)
+    admin_raw = msg_update(5005, "/start", name="Murilo")
+    admin_raw["message"]["from"]["username"] = "Murilocastronv"
+    await h.send(admin_raw)
+    await onboard(h, 6006, "Cliente", "client")
+    await h.text(6006, t("menu.support", "pt"))
+    rm = session.sent_to(6006)[-1].reply_markup
+    assert any(b.url == "https://t.me/Murilocastronv" for row in rm.inline_keyboard for b in row)
+    await h.click(6006, "sup:new")
+    await h.text(6006, "Preciso de ajuda urgente")
+    assert any("Preciso de ajuda urgente" in x for x in session.texts_to(5005))

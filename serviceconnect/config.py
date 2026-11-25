@@ -26,6 +26,10 @@ class Settings:
     admin_password: str = field(default_factory=lambda: os.getenv("ADMIN_PASSWORD", ""))
     admin_telegram_ids: list[int] = field(default_factory=lambda: _list_int(os.getenv("ADMIN_TELEGRAM_IDS")))
     session_secret: str = field(default_factory=lambda: os.getenv("SESSION_SECRET", ""))
+    # @usernames dos administradores (o bot encontra o ID depois de a pessoa ter dado /start no bot)
+    admin_usernames: list[str] = field(default_factory=lambda: [u.strip().lstrip("@").lower() for u in
+                                                                 os.getenv("ADMIN_USERNAMES", "").replace(";", ",").split(",") if u.strip()])
+    keep_alive: bool = field(default_factory=lambda: os.getenv("KEEP_ALIVE", "1") not in ("0", "false", "no"))
     support_contact: str = field(default_factory=lambda: os.getenv("SUPPORT_CONTACT", ""))
     company_name: str = field(default_factory=lambda: os.getenv("COMPANY_NAME", "ServiceConnect"))
     # anti-spam

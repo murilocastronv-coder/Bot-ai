@@ -52,6 +52,21 @@ async def maintenance_loop() -> None:
         await asyncio.sleep(3540)
 
 
+async def keep_alive_loop() -> None:
+    """Plano free do Render: o serviço dorme após 15 min sem tráfego. Um ping a cada 10 min mantém o bot rápido."""
+    import aiohttp
+    url = f"{settings.webhook_base_url}/health"
+    await asyncio.sleep(30)
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20)) as http:
+        while True:
+            try:
+                async with http.get(url) as r:
+                    await r.read()
+            except Exception as ex:  # noqa: BLE001
+                log.warning("keep-alive falhou: %s", ex)
+            await asyncio.sleep(600)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     database = get_db()
@@ -59,6 +74,8 @@ async def lifespan(app: FastAPI):
     app.state.bot = None
     app.state.dp = None
     tasks = [asyncio.create_task(maintenance_loop())]
+    if settings.keep_alive and settings.webhook_base_url.startswith("https://"):
+        tasks.append(asyncio.create_task(keep_alive_loop()))
     if settings.bot_token:
         bot = create_bot()
         dp = create_dispatcher(database)

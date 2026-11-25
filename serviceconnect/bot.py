@@ -306,8 +306,23 @@ async def notify(bot: Bot, s, user: User, text: str, kb: InlineKeyboardMarkup | 
     return False
 
 
-async def notify_admins(bot: Bot, text: str) -> None:
-    for admin_id in settings.admin_telegram_ids:
+async def admin_ids(s=None) -> set[int]:
+    """IDs configurados + IDs dos @usernames de ADMIN_USERNAMES que já usaram o bot."""
+    ids = set(settings.admin_telegram_ids)
+    if s is not None and settings.admin_usernames:
+        from sqlalchemy import func
+        rows = await s.execute(select(User.telegram_id).where(func.lower(User.username).in_(settings.admin_usernames)))
+        ids.update(r[0] for r in rows)
+    return ids
+
+
+def is_admin_user(tg_user) -> bool:
+    return tg_user is not None and (tg_user.id in settings.admin_telegram_ids
+                                    or (tg_user.username or "").lower() in settings.admin_usernames)
+
+
+async def notify_admins(bot: Bot, text: str, s=None) -> None:
+    for admin_id in await admin_ids(s):
         try:
             await bot.send_message(admin_id, text, disable_web_page_preview=True)
         except Exception as ex:  # noqa: BLE001
@@ -1312,7 +1327,7 @@ async def report_reason(m: Message, state: FSMContext, s, user: User, lang: str,
         kwargs["target_user_id"] = req.client_id if req else None
     rep = await sv.create_report(s, user, txt, **kwargs)
     await m.answer(t("report_sent", lang), reply_markup=menu_kb(lang))
-    await notify_admins(bot, f"🚩 Denúncia #{rep.id} ({kind}:{target}) de {e(user.name)} [{user.id}]\n{e(cut(txt, 500))}")
+    await notify_admins(bot, f"🚩 Denúncia #{rep.id} ({kind}:{target}) de {e(user.name)} [{user.id}]\n{e(cut(txt, 500))}", s)
 
 
 # ----------------------------------------------------------------------- 💬 mensagens (chat interno)
@@ -1733,7 +1748,15 @@ async def menu_language(m: Message, lang: str, **_):
 # ----------------------------------------------------------------------- 🆘 suporte
 async def menu_support(m: Message, lang: str, **_):
     await m.answer(t("support_text", lang, terms=public_url("/terms", lang), privacy=public_url("/privacy", lang)),
-                   reply_markup=ikb([(t("btn.contact_support", lang), "sup:new")]), disable_web_page_preview=True)
+                   reply_markup=support_kb(lang), disable_web_page_preview=True)
+
+
+def support_kb(lang: str) -> InlineKeyboardMarkup:
+    rows = [[(t("btn.contact_support", lang), "sup:new")]]
+    contact = settings.support_contact.strip()
+    if contact.startswith("@") and len(contact) > 1:
+        rows.append([(f"💬 {contact}", f"url:https://t.me/{contact[1:]}")])
+    return ikb(*rows)
 
 
 @router.callback_query(F.data == "sup:new")
@@ -1753,12 +1776,12 @@ async def support_text(m: Message, state: FSMContext, s, user: User, lang: str, 
     ticket = await sv.create_report(s, user, txt, kind="support")
     await show_menu(m, lang, t("support_sent", lang))
     await notify_admins(bot, f"🆘 Suporte #{ticket.id} de {e(user.name)} [{user.id}]\n{e(cut(txt, 1000))}\n\n"
-                             f"Responder: <code>/reply {ticket.id} texto</code>")
+                             f"Responder: <code>/reply {ticket.id} texto</code>", s)
 
 
 @router.message(Command("reply"))
 async def cmd_reply(m: Message, command: CommandObject, s, bot: Bot):
-    if m.from_user.id not in settings.admin_telegram_ids:
+    if not is_admin_user(m.from_user):
         return
     ticket_id, _, text = (command.args or "").partition(" ")
     from models import Report
@@ -1776,7 +1799,7 @@ async def cmd_reply(m: Message, command: CommandObject, s, bot: Bot):
 
 @router.message(Command("admin"))
 async def cmd_admin(m: Message, s):
-    if m.from_user.id not in settings.admin_telegram_ids:
+    if not is_admin_user(m.from_user):
         return
     st = await sv.stats(s)
     await m.answer("🛠 <b>Admin</b>\n" + "\n".join(f"{k}: <b>{v}</b>" for k, v in st.items())
