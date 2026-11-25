@@ -80,6 +80,8 @@ async def lifespan(app: FastAPI):
         bot = create_bot()
         dp = create_dispatcher(database)
         app.state.bot, app.state.dp = bot, dp
+        import sam_sol
+        tasks.append(asyncio.create_task(sam_sol.run(bot)))  # robô SAM SOL (demo liga sozinha)
         try:
             await setup_bot_profile(bot)
             if settings.webhook_url:

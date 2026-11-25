@@ -24,6 +24,20 @@ painel administrativo web e monetização (Telegram Stars) **preparada mas desat
 | `storage.py` | Estado das conversas guardado no PostgreSQL (não se perde quando o Render reinicia) |
 | `tests/` | Testes automatizados |
 
+## Robô SAM SOL (`/sol`, só administradores)
+
+A estratégia do EA **SAM Style V4** (MT5) passada para SOL/USD: entra a favor de um movimento de 50 pontos
+na vela de 1 minuto, no máximo 2 ordens do mesmo lado (a 2ª 80 pontos a favor), cesta com trailing de
+US$ 1,00/0,30, stop de 1% do saldo por cesta, margem ≤ 15%, meta do mês +40% / stop do mês −5%.
+O lucro das cestas já desconta as taxas da Jupiter (0,06% + 0,06%).
+
+- **Conta demo**: liga sozinha, US$ 1000 de mentira com o preço real da Binance.
+- **Conta real**: Jupiter Perps, começa **desligada**. 💼 Carteira real cria a carteira (precisa de
+  `SAM_WALLET_PASSPHRASE`), envie USDC + ~0,05 SOL e confirme 💰 Ligar real.
+- **Backtest**: 1 ano, 3 meses, 2 meses e 1 mês com velas de 1 minuto da Binance.
+
+Código: `sam_sol.py` (estratégia, backtest, robô, botões), `sam_perps.py` (ordens na Jupiter), `sam_wallet.py`.
+
 ## Funcionalidades
 
 **Menu principal**: 🔎 Encontrar profissional · 📢 Publicar um serviço · 💼 Encontrar trabalho · 👤 Meu perfil ·
