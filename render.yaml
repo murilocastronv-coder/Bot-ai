@@ -85,3 +85,8 @@ services:
         sync: false
       - key: ADMIN_TELEGRAM_IDS
         sync: false
+      # Robô SAM SOL (/sol): frase que cifra a carteira da conta real no banco (24+ caracteres)
+      - key: SAM_WALLET_PASSPHRASE
+        sync: false
+      - key: SOLANA_RPC_URL
+        sync: false

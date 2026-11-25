@@ -1950,6 +1950,9 @@ def create_dispatcher(database) -> Dispatcher:
     dp = Dispatcher(storage=storage)
     dp.update.outer_middleware(ThrottleMiddleware(settings.rate_limit_per_minute))
     dp.update.outer_middleware(ContextMiddleware(database))
+    import sam_sol  # robô SAM SOL (/sol, só administradores) antes do router principal
+    sam_sol.router._parent_router = None  # um Dispatcher novo (testes) pode reutilizar o router
+    dp.include_router(sam_sol.router)
     dp.include_router(router)
 
     @dp.errors()
