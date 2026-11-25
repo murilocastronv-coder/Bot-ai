@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}ServiceConnect Admin{% endblock %}</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1d2433;--muted:#6b7385;--line:#e4e7ef;--brand:#2563eb;--ok:#15803d;--bad:#b91c1c;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#0f131a;--card:#171c26;--ink:#e7eaf1;--muted:#9aa3b5;--line:#2a3140;--brand:#5b8cff;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:var(--brand);text-decoration:none}header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:1200px;margin:auto}.logo{font-weight:700}
+nav{display:flex;gap:4px;overflow-x:auto;padding:0 12px 8px;max-width:1200px;margin:auto;scrollbar-width:none}
+nav a{white-space:nowrap;padding:6px 10px;border-radius:8px;color:var(--muted)}nav a:hover,nav a.on{background:var(--bg);color:var(--ink)}
+main{max-width:1200px;margin:auto;padding:16px}h1{font-size:22px;margin:4px 0 14px}h2{font-size:17px;margin:18px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.stat b{display:block;font-size:24px}.stat span{color:var(--muted);font-size:13px}
+.tbl{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase}
+input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);max-width:100%}
+textarea{width:100%;min-height:120px}
+button,.btn{font:inherit;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;display:inline-block}
+button.primary,.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}button.danger{color:var(--bad);border-color:var(--bad)}
+form.inline{display:inline}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--line);color:var(--muted)}
+.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.bad{color:var(--bad);border-color:var(--bad)}.pill.warn{color:var(--warn);border-color:var(--warn)}
+.flash{background:var(--card);border-left:4px solid var(--brand);padding:10px 12px;border-radius:8px;margin-bottom:14px}
+.muted{color:var(--muted)}.bar{height:8px;background:var(--brand);border-radius:4px;min-width:2px}.bar.b2{background:var(--ok)}
+</style>
+</head>
+<body>
+{% if admin %}
+<header>
+  <div class="top"><span class="logo">🛠 ServiceConnect</span><span class="muted" style="flex:1"></span>
+    <form method="post" action="/admin/logout" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Sair</button></form></div>
+  <nav>
+    {% set p = request.url.path %}
+    <a href="/admin" class="{{ 'on' if p == '/admin' }}">📊 Painel</a>
+    <a href="/admin/users" class="{{ 'on' if p.startswith('/admin/users') }}">👥 Usuários</a>
+    <a href="/admin/requests" class="{{ 'on' if p.startswith('/admin/requests') }}">📢 Pedidos</a>
+    <a href="/admin/categories" class="{{ 'on' if p.startswith('/admin/categories') }}">🏷 Categorias</a>
+    <a href="/admin/reports" class="{{ 'on' if p.startswith('/admin/reports') }}">🚩 Denúncias e suporte</a>
+    <a href="/admin/broadcast" class="{{ 'on' if p.startswith('/admin/broadcast') }}">📣 Comunicados</a>
+    <a href="/admin/monetization" class="{{ 'on' if p.startswith('/admin/monetization') }}">💳 Planos</a>
+    <a href="/admin/cities" class="{{ 'on' if p.startswith('/admin/cities') }}">🌍 Países e cidades</a>
+    <a href="/admin/referrals" class="{{ 'on' if p.startswith('/admin/referrals') }}">🏆 Indicações</a>
+    <a href="/admin/backup">💾 Backup</a>
+  </nav>
+</header>
+{% endif %}
+<main>
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>👥 Usuários</h1>
+<form class="row card" method="get">
+  <input name="q" value="{{ q }}" placeholder="Nome, @usuário, cidade ou ID">
+  <select name="role"><option value="">Todos</option><option value="clients" {{ 'selected' if role=='clients' }}>Clientes</option><option value="providers" {{ 'selected' if role=='providers' }}>Profissionais</option></select>
+  <select name="status"><option value="">Qualquer estado</option><option value="active" {{ 'selected' if status=='active' }}>Ativos (7 d)</option><option value="banned" {{ 'selected' if status=='banned' }}>Suspensos</option><option value="paid" {{ 'selected' if status=='paid' }}>Com plano</option></select>
+  <button class="primary">Filtrar</button>
+</form>
+<div class="card tbl"><table>
+<tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Cidade</th><th>Plano</th><th>Estado</th><th>Última atividade</th></tr>
+{% for u in users %}<tr>
+<td><a href="/admin/users/{{ u.id }}">#{{ u.id }}</a></td>
+<td><a href="/admin/users/{{ u.id }}">{{ u.name or '—' }}</a>{% if u.username %}<br><span class="muted">@{{ u.username }}</span>{% endif %}</td>
+<td>{% if u.is_provider %}<span class="pill">profissional</span>{% if u.provider and u.provider.verified %} <span class="pill ok">verificado</span>{% endif %}{% else %}<span class="pill">cliente</span>{% endif %}</td>
+<td>{{ u.city or '—' }} {{ u.country or '' }}</td>
+<td>{{ u.plan_code }}</td>
+<td>{% if u.is_banned %}<span class="pill bad">suspenso</span>{% elif not u.onboarded %}<span class="pill warn">cadastro incompleto</span>{% else %}<span class="pill ok">ativo</span>{% endif %}</td>
+<td>{{ u.last_active_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">Nenhum usuário.</td></tr>{% endfor %}
+</table></div>
+<div class="row">{% if page > 1 %}<a class="btn" href="?q={{ q }}&role={{ role }}&status={{ status }}&page={{ page-1 }}">← Anterior</a>{% endif %}
+{% if has_next %}<a class="btn" href="?q={{ q }}&role={{ role }}&status={{ status }}&page={{ page+1 }}">Seguinte →</a>{% endif %}</div>
+{% endblock %}

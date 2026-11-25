@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>🏆 Ranking de indicações válidas</h1>
+<p class="muted">Só contam convidados que concluíram o cadastro, aceitaram os termos e não estão suspensos.</p>
+<div class="card tbl"><table><tr><th>#</th><th>Usuário</th><th>Indicações válidas</th></tr>
+{% for u, n in ranking %}<tr><td>{{ loop.index }}</td><td><a href="/admin/users/{{ u.id }}">{{ u.name }}</a></td><td><b>{{ n }}</b></td></tr>
+{% else %}<tr><td colspan="3" class="muted">Ainda sem indicações.</td></tr>{% endfor %}</table></div>
+{% endblock %}

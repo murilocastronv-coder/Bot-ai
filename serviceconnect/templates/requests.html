@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📢 Pedidos publicados</h1>
+<form class="row card" method="get"><select name="status"><option value="">Todos</option>
+{% for st in ['open','assigned','completed','cancelled','hidden'] %}<option value="{{ st }}" {{ 'selected' if status==st }}>{{ st }}</option>{% endfor %}</select><button class="primary">Filtrar</button></form>
+<div class="card tbl"><table><tr><th>#</th><th>Categoria</th><th>Descrição</th><th>Cidade</th><th>Orçamento</th><th>Urgência</th><th>Propostas</th><th>Notificados</th><th>Estado</th><th>Cliente</th><th></th></tr>
+{% for r in reqs %}<tr><td>#{{ r.id }}</td><td>{{ r.category.emoji }} {{ r.category.names.get('pt') or r.category.key }}</td><td>{{ r.description[:160] }}</td>
+<td>{{ r.city or '—' }}</td><td>{{ r.budget or '—' }}</td><td>{{ r.urgency }}</td><td>{{ counts[r.id] }}</td><td>{{ r.notified_count }}</td><td>{{ r.status }}</td>
+<td><a href="/admin/users/{{ r.client_id }}">#{{ r.client_id }}</a></td>
+<td>{% if r.status != 'hidden' %}<form method="post" action="/admin/requests/{{ r.id }}/hide" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="danger">Remover</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="11" class="muted">Nenhum pedido.</td></tr>{% endfor %}</table></div>
+<div class="row">{% if page > 1 %}<a class="btn" href="?status={{ status }}&page={{ page-1 }}">← Anterior</a>{% endif %}{% if has_next %}<a class="btn" href="?status={{ status }}&page={{ page+1 }}">Seguinte →</a>{% endif %}</div>
+{% endblock %}

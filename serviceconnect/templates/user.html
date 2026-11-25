@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% macro act(name, label, cls='') %}<form method="post" action="/admin/users/{{ u.id }}/action" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ name }}"><button class="{{ cls }}">{{ label }}</button></form>{% endmacro %}
+{% block content %}
+<h1>👤 {{ u.name or '—' }} <span class="muted">#{{ u.id }}</span></h1>
+<div class="card">
+  <div>Telegram ID: <code>{{ u.telegram_id }}</code> {% if u.username %}· @{{ u.username }}{% endif %}</div>
+  <div>Local: {{ u.city or '—' }} {{ u.country or '' }} · Idioma: {{ u.language }}</div>
+  <div>Plano: <b>{{ u.plan_code }}</b>{% if u.plan_until %} até {{ u.plan_until.strftime('%d/%m/%Y') }}{% endif %} · Convidou: {{ invited }}{% if u.early_adopter %} · 🏅 early adopter{% endif %}</div>
+  <div>Criado: {{ u.created_at.strftime('%d/%m/%Y') }} · Termos aceites: {{ u.accepted_terms_at.strftime('%d/%m/%Y') if u.accepted_terms_at else 'não' }}</div>
+  <div>Estado: {% if u.is_banned %}<span class="pill bad">suspenso ({{ u.ban_reason }})</span>{% else %}<span class="pill ok">ativo</span>{% endif %}{% if u.blocked_bot %} <span class="pill warn">bloqueou o bot</span>{% endif %}</div>
+</div>
+<div class="card row">
+  {% if u.is_banned %}{{ act('unban', '✅ Reativar') }}{% else %}
+  <form method="post" action="/admin/users/{{ u.id }}/action" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="ban"><input name="reason" placeholder="Motivo"><button class="danger">🚫 Suspender</button></form>{% endif %}
+  {% if prof %}{% if prof.verified %}{{ act('unverify', 'Remover selo verificado') }}{% else %}{{ act('verify', '✅ Marcar como verificado') }}{% endif %}{% endif %}
+</div>
+<div class="card">
+  <h2>🎁 Conceder acesso premium gratuito</h2>
+  <form method="post" action="/admin/users/{{ u.id }}/action" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="grant">
+    <select name="plan">{% for p in plans if p.code != 'free' %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}</select>
+    <input type="number" name="days" value="30" min="1" max="3650" style="width:90px"> dias <button class="primary">Conceder</button></form>
+  {% if u.plan_code != 'free' %}<p>{{ act('revoke', 'Voltar ao plano gratuito') }}</p>{% endif %}
+</div>
+{% if prof %}<div class="card"><h2>🧰 Perfil profissional</h2>
+  <div><b>{{ prof.business_name }}</b> · ⭐ {{ '%.1f'|format(prof.rating_avg) }} ({{ prof.rating_count }}) · {{ prof.jobs_done }} trabalhos · raio {{ prof.radius_km }} km · 👁 {{ prof.profile_views }}</div>
+  <p class="muted">{{ prof.description }}</p></div>{% endif %}
+<div class="card tbl"><h2>📢 Pedidos</h2><table><tr><th>#</th><th>Descrição</th><th>Estado</th><th>Data</th></tr>
+{% for r in reqs %}<tr><td>#{{ r.id }}</td><td>{{ r.description[:120] }}</td><td>{{ r.status }}</td><td>{{ r.created_at.strftime('%d/%m/%Y') }}</td></tr>{% else %}<tr><td colspan="4" class="muted">Nenhum.</td></tr>{% endfor %}</table></div>
+<div class="card tbl"><h2>🚩 Denúncias envolvendo este usuário</h2><table><tr><th>#</th><th>Tipo</th><th>Motivo</th><th>Estado</th></tr>
+{% for r in reports %}<tr><td>#{{ r.id }}</td><td>{{ r.kind }}{% if r.reporter_id == u.id %} (feita por ele){% endif %}</td><td>{{ r.reason[:200] }}</td><td>{{ r.status }}</td></tr>{% else %}<tr><td colspan="4" class="muted">Nenhuma.</td></tr>{% endfor %}</table></div>
+<div class="card"><h2>⚠️ RGPD</h2><form method="post" action="/admin/users/{{ u.id }}/action" onsubmit="return confirm('Excluir definitivamente este usuário e todos os seus dados?')"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="delete"><button class="danger">🗑 Excluir usuário e dados</button></form></div>
+{% endblock %}

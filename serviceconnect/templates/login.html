@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:380px;margin:40px auto">
+  <h1>🔐 Admin</h1>
+  {% if disabled %}
+    <p>O painel está desativado. Defina <code>ADMIN_PASSWORD</code> nas variáveis de ambiente do Render.</p>
+  {% else %}
+  <form method="post" action="/admin/login">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <p><input name="username" placeholder="Usuário" autocomplete="username" required style="width:100%"></p>
+    <p><input name="password" type="password" placeholder="Senha" autocomplete="current-password" required style="width:100%"></p>
+    <button class="primary" style="width:100%">Entrar</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

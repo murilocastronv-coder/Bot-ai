@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>🌍 Países e cidades</h1>
+<p class="muted">As cidades desta lista têm coordenadas: permitem a busca por distância (5–100 km) quando o usuário escreve o nome da cidade em vez de partilhar a localização. O bot funciona em qualquer país.</p>
+<div class="card"><h2>Adicionar cidade</h2><form method="post" action="/admin/cities" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <input name="name" placeholder="Nome" required><input name="country" placeholder="País (ex.: PT)" required style="width:110px">
+  <input type="number" step="any" name="lat" placeholder="Latitude" required style="width:120px"><input type="number" step="any" name="lon" placeholder="Longitude" required style="width:120px">
+  <button class="primary">Adicionar</button></form></div>
+<div class="card"><h2>Usuários por país</h2><div class="row">{% for c, n in countries %}<span class="pill">{{ c }}: {{ n }}</span>{% else %}<span class="muted">Sem dados.</span>{% endfor %}</div></div>
+<div class="card tbl"><table><tr><th>Cidade</th><th>País</th><th>Lat</th><th>Lon</th><th>Estado</th><th></th></tr>
+{% for c in cities %}<tr><td>{{ c.name }}</td><td>{{ c.country }}</td><td>{{ c.lat }}</td><td>{{ c.lon }}</td><td>{{ 'ativa' if c.active else 'inativa' }}</td>
+<td><form method="post" action="/admin/cities/{{ c.id }}/toggle" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ 'Desativar' if c.active else 'Ativar' }}</button></form></td></tr>{% endfor %}</table></div>
+{% endblock %}

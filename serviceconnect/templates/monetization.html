@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>💳 Planos e monetização</h1>
+<div class="card">
+  <p>Estado: {% if enabled %}<span class="pill warn">cobranças ATIVAS</span>{% else %}<span class="pill ok">desativadas — tudo gratuito</span>{% endif %}</p>
+  <p class="muted">Pagamentos via Telegram Stars (⭐), por 30 dias, sem renovação automática. Antes de cada compra o usuário vê o preço e confirma explicitamente. Informe os usuários com um comunicado antes de ativar.</p>
+  <form method="post" action="/admin/monetization/toggle" class="row">
+    {% if not enabled %}<input name="confirm" placeholder="Escreva ATIVAR"><button class="danger">Ativar cobranças</button>{% else %}<button class="primary">Desativar cobranças</button>{% endif %}</form>
+  <p class="muted">Receita: {{ st.revenue_stars }} ⭐ no total · {{ st.revenue_stars_30d }} ⭐ nos últimos 30 dias · {{ st.paid_users }} planos ativos</p>
+</div>
+<h2>Planos (preços editáveis)</h2>
+{% for p in plans %}<div class="card"><form method="post" action="/admin/plans/{{ p.id }}" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <b style="min-width:80px">{{ p.code }}</b><input name="name" value="{{ p.name }}" style="width:140px">
+  <label>€ <input type="number" step="0.01" min="0" name="price_eur" value="{{ p.price_eur }}" style="width:90px"></label>
+  <label>⭐ <input type="number" min="0" name="price_stars" value="{{ p.price_stars }}" style="width:90px"></label>
+  <label><input type="checkbox" name="active" value="1" {{ 'checked' if p.active }} {{ 'disabled' if p.code=='free' }}> ativo</label>
+  <button class="primary">Guardar</button></form>
+  <div class="muted">Benefícios: {{ p.features|join(', ') }}</div></div>{% endfor %}
+<h2>🎟 Promoções</h2>
+<div class="card"><form method="post" action="/admin/promotions" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <input name="code" placeholder="CÓDIGO" required style="width:130px">
+  <select name="plan_code">{% for p in plans if p.code != 'free' %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}</select>
+  <input type="number" name="days" value="30" min="1" style="width:80px"> dias · máx. <input type="number" name="max_uses" value="100" min="1" style="width:80px"> usos
+  <button class="primary">Criar</button></form></div>
+<div class="card tbl"><table><tr><th>Código</th><th>Plano</th><th>Dias</th><th>Usos</th><th>Estado</th><th></th></tr>
+{% for p in promos %}<tr><td><code>{{ p.code }}</code></td><td>{{ p.plan_code }}</td><td>{{ p.days }}</td><td>{{ p.uses }}/{{ p.max_uses }}</td><td>{{ 'ativa' if p.active else 'inativa' }}</td>
+<td><form method="post" action="/admin/promotions/{{ p.id }}/toggle" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ 'Desativar' if p.active else 'Ativar' }}</button></form></td></tr>
+{% else %}<tr><td colspan="6" class="muted">Nenhuma.</td></tr>{% endfor %}</table></div>
+{% endblock %}

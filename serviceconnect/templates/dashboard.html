@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📊 Painel</h1>
+<p>Monetização: {% if monetization %}<span class="pill warn">ATIVA</span>{% else %}<span class="pill ok">desativada — 100% gratuito</span>{% endif %}</p>
+<div class="grid">
+  <div class="stat"><b>{{ st.users }}</b><span>usuários</span></div>
+  <div class="stat"><b>{{ st.clients }}</b><span>clientes</span></div>
+  <div class="stat"><b>{{ st.providers }}</b><span>profissionais</span></div>
+  <div class="stat"><b>{{ st.active_24h }}</b><span>ativos 24 h</span></div>
+  <div class="stat"><b>{{ st.active_7d }}</b><span>ativos 7 dias</span></div>
+  <div class="stat"><b>{{ st.new_7d }}</b><span>novos 7 dias</span></div>
+  <div class="stat"><b>{{ st.requests }}</b><span>pedidos ({{ st.requests_open }} abertos)</span></div>
+  <div class="stat"><b>{{ st.requests_completed }}</b><span>serviços concluídos</span></div>
+  <div class="stat"><b>{{ st.proposals }}</b><span>propostas</span></div>
+  <div class="stat"><b>{{ st.messages }}</b><span>mensagens</span></div>
+  <div class="stat"><b>{{ st.reviews }}</b><span>avaliações</span></div>
+  <div class="stat"><b>{{ st.reports_open }}</b><span>denúncias abertas</span></div>
+  <div class="stat"><b>{{ st.paid_users }}</b><span>planos ativos</span></div>
+  <div class="stat"><b>{{ st.revenue_stars }} ⭐</b><span>receita total ({{ st.revenue_stars_30d }} ⭐ em 30 d)</span></div>
+  <div class="stat"><b>{{ st.banned }}</b><span>suspensos</span></div>
+</div>
+<h2>Últimos 14 dias</h2>
+<div class="card tbl"><table>
+<tr><th>Dia</th><th>Novos usuários</th><th>Novos pedidos</th></tr>
+{% for d in days %}<tr><td>{{ d.day }}</td>
+<td><div class="row"><div class="bar" style="width:{{ (d.users / peak * 160)|int }}px"></div>{{ d.users }}</div></td>
+<td><div class="row"><div class="bar b2" style="width:{{ (d.requests / peak * 160)|int }}px"></div>{{ d.requests }}</div></td></tr>{% endfor %}
+</table></div>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+<div class="card"><h2>Categorias mais pedidas</h2>{% for c, n in top_cats %}<div>{{ c.emoji }} {{ c.names.get('pt') or c.key }} — <b>{{ n }}</b></div>{% else %}<p class="muted">Sem dados.</p>{% endfor %}</div>
+<div class="card"><h2>Cidades com mais usuários</h2>{% for c, n in top_cities %}<div>{{ c }} — <b>{{ n }}</b></div>{% else %}<p class="muted">Sem dados.</p>{% endfor %}</div>
+</div>
+{% endblock %}

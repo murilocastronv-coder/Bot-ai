@@ -1,5 +1,7 @@
 # SmartBusiness AI
 
+> 🆕 Este repositório também contém o **ServiceConnect**, bot de Telegram marketplace de serviços, na pasta [`serviceconnect/`](serviceconnect/README.md) (serviço `serviceconnect-bot` no `render.yaml`).
+
 Plataforma SaaS que oferece agentes de IA para pequenas e médias empresas. Cada empresa configura o próprio agente, que atende os clientes 24h/24 no **site (widget)**, no **Telegram** e no **WhatsApp (API oficial da Meta)**, agenda horários, registra orçamentos e passa a conversa para um humano quando precisa.
 
 > **Deploy gratuito:** o `render.yaml` deste repositório usa o plano free do Render e a IA gratuita da Groq. Veja “Modo gratuito” abaixo.

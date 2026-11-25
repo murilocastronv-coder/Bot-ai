@@ -1,0 +1,35 @@
+# Referência: o Blueprint que o Render lê é o render.yaml na RAIZ do repositório,
+# onde este serviço já está declarado (serviceconnect-bot). Este ficheiro serve
+# para publicar o ServiceConnect sozinho num repositório próprio.
+services:
+  - type: web
+    name: serviceconnect-bot
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: serviceconnect-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: serviceconnect
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false
+databases:
+  - name: serviceconnect-db
+    plan: basic-256mb
+    region: frankfurt

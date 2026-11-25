@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% macro catform(c=None) %}
+<form method="post" action="/admin/categories" class="row">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="cid" value="{{ c.id if c else 0 }}">
+  <input name="emoji" value="{{ c.emoji if c else '✨' }}" style="width:56px" title="Emoji">
+  {% for l in langs %}<input name="name_{{ l }}" value="{{ c.names.get(l, '') if c else '' }}" placeholder="Nome {{ l|upper }}" style="width:170px">{% endfor %}
+  <input type="number" name="sort" value="{{ c.sort if c else 100 }}" style="width:72px" title="Ordem">
+  <button class="primary">{{ 'Guardar' if c else 'Adicionar' }}</button>
+</form>{% endmacro %}
+{% block content %}
+<h1>🏷 Categorias</h1>
+<div class="card"><h2>Nova categoria</h2>{{ catform() }}</div>
+{% for c in cats %}<div class="card">
+  <div class="row"><b>{{ c.emoji }} {{ c.names.get('pt') or c.key }}</b> <span class="muted">({{ c.key }})</span>
+  {% if c.active %}<span class="pill ok">ativa</span>{% else %}<span class="pill bad">inativa</span>{% endif %}
+  <form method="post" action="/admin/categories/{{ c.id }}/toggle" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ 'Desativar' if c.active else 'Ativar' }}</button></form></div>
+  <div style="margin-top:8px">{{ catform(c) }}</div>
+</div>{% endfor %}
+{% endblock %}

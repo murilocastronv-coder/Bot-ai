@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📣 Comunicados</h1>
+<div class="card">
+  <p class="muted">Enviados só a quem aceitou receber comunicados (cada usuário pode desligar em «Meu perfil»). Alcance atual: <b>{{ reach }}</b> usuários.</p>
+  <form method="post" action="/admin/broadcast"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <textarea name="text" maxlength="3500" required placeholder="Texto do comunicado"></textarea>
+    <div class="row" style="margin-top:8px"><select name="audience"><option value="all">Todos</option><option value="clients">Clientes</option><option value="providers">Profissionais</option></select>
+    <button class="primary" onclick="return confirm('Enviar o comunicado?')">Enviar</button></div></form>
+</div>
+<div class="card tbl"><h2>Histórico</h2><table><tr><th>Data</th><th>Público</th><th>Texto</th><th>Enviados</th><th>Falhas</th></tr>
+{% for b in rows %}<tr><td>{{ b.created_at.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ b.audience }}</td><td>{{ b.text[:200] }}</td><td>{{ b.sent }}</td><td>{{ b.failed }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Nenhum.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -53,3 +53,35 @@ services:
         value: services
       - key: TELEGRAM_BOT_TOKEN
         sync: false
+
+  # ===== ServiceConnect — bot de Telegram marketplace de serviços (Python/FastAPI/aiogram) =====
+  # Código em ./serviceconnect. Usa o esquema "serviceconnect" no mesmo PostgreSQL (não toca nas tabelas do bot-ai).
+  - type: web
+    name: serviceconnect-bot
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: serviceconnect
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: solana-devbot-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: serviceconnect
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false

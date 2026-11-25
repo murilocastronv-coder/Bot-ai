@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% macro act(r, name, label, cls='') %}<form method="post" action="/admin/reports/{{ r.id }}/action" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ name }}"><button class="{{ cls }}">{{ label }}</button></form>{% endmacro %}
+{% block content %}
+<h1>🚩 Denúncias e suporte</h1>
+<div class="row card">{% for st, label in [('open','Abertas'),('resolved','Resolvidas'),('dismissed','Arquivadas'),('','Todas')] %}<a class="btn {{ 'primary' if status==st }}" href="?status={{ st }}">{{ label }}</a>{% endfor %}</div>
+{% for r in reports %}
+<div class="card">
+  <div class="row"><b>#{{ r.id }}</b>{% if r.kind == 'support' %}<span class="pill warn">suporte</span>{% else %}<span class="pill bad">denúncia</span>{% endif %}<span class="pill">{{ r.status }}</span><span class="muted">{{ r.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+  <p>{{ r.reason }}</p>
+  <div class="muted">De: {% if r.reporter_id and users.get(r.reporter_id) %}<a href="/admin/users/{{ r.reporter_id }}">{{ users[r.reporter_id].name }}</a>{% else %}—{% endif %}
+  {% if r.target_user_id and users.get(r.target_user_id) %} · Alvo: <a href="/admin/users/{{ r.target_user_id }}">{{ users[r.target_user_id].name }}</a>{% endif %}
+  {% if r.request_id %} · Pedido #{{ r.request_id }}{% endif %}</div>
+  {% if r.review_id and reviews.get(r.review_id) %}<blockquote class="muted">⭐ {{ reviews[r.review_id].rating }} — {{ reviews[r.review_id].comment }}{% if reviews[r.review_id].hidden %} (oculta){% endif %}</blockquote>{% endif %}
+  {% if r.status == 'open' %}
+  <div class="row" style="margin-top:8px">
+    {{ act(r, 'resolve', '✅ Resolver') }} {{ act(r, 'dismiss', 'Arquivar') }}
+    {% if r.review_id %}{{ act(r, 'hide_review', 'Ocultar avaliação') }}{% endif %}
+    {% if r.request_id %}{{ act(r, 'hide_request', 'Remover pedido') }}{% endif %}
+    {% if r.target_user_id %}{{ act(r, 'ban', '🚫 Suspender alvo', 'danger') }}{% endif %}
+  </div>
+  {% if r.reporter_id %}<form method="post" action="/admin/reports/{{ r.id }}/action" style="margin-top:8px"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="reply">
+    <textarea name="reply" placeholder="Responder pelo bot…" style="min-height:70px"></textarea><button class="primary">Enviar resposta</button></form>{% endif %}
+  {% endif %}
+</div>
+{% else %}<div class="card muted">Nada por aqui. 🎉</div>{% endfor %}
+{% endblock %}
