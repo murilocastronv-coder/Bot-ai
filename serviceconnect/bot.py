@@ -1926,8 +1926,22 @@ async def fallback_callback(c: CallbackQuery, lang: str):
 
 
 # ======================================================================= montagem
+async def tolerate_old_callbacks(make_request, bot, method):
+    """Se o servidor demorou (ex.: a acordar), o Telegram expira o 'answerCallbackQuery'.
+    Isso não deve impedir o bot de responder ao clique."""
+    from aiogram.methods import AnswerCallbackQuery
+    try:
+        return await make_request(bot, method)
+    except TelegramBadRequest as ex:
+        if isinstance(method, AnswerCallbackQuery) and ("too old" in str(ex) or "query ID is invalid" in str(ex)):
+            return True
+        raise
+
+
 def create_bot(token: str | None = None) -> Bot:
-    return Bot(token or settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot = Bot(token or settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot.session.middleware(tolerate_old_callbacks)
+    return bot
 
 
 def create_dispatcher(database) -> Dispatcher:

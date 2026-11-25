@@ -269,3 +269,17 @@ async def test_support_goes_to_admin_by_username(db, fake_bot, monkeypatch):
     await h.click(6006, "sup:new")
     await h.text(6006, "Preciso de ajuda urgente")
     assert any("Preciso de ajuda urgente" in x for x in session.texts_to(5005))
+
+
+async def test_expired_callback_does_not_break_handler():
+    from aiogram.exceptions import TelegramBadRequest
+    from aiogram.methods import AnswerCallbackQuery, SendMessage
+
+    from bot import tolerate_old_callbacks
+
+    async def failing(bot, method):
+        raise TelegramBadRequest(method=method, message="Bad Request: query is too old and response timeout expired or query ID is invalid")
+    assert await tolerate_old_callbacks(failing, None, AnswerCallbackQuery(callback_query_id="1")) is True
+    import pytest
+    with pytest.raises(TelegramBadRequest):
+        await tolerate_old_callbacks(failing, None, SendMessage(chat_id=1, text="x"))
