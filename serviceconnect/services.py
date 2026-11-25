@@ -301,6 +301,39 @@ async def open_jobs_for_provider(s: AsyncSession, prof: ProviderProfile, user: U
     return out[:limit]
 
 
+async def market_requests(s: AsyncSession, viewer: User, category_id: int | None = None,
+                          limit: int = 300) -> list[tuple[ServiceRequest, float | None]]:
+    """Mural público: todos os pedidos abertos (de qualquer lugar), os mais próximos e recentes primeiro."""
+    q = (select(ServiceRequest).join(User, User.id == ServiceRequest.client_id)
+         .where(ServiceRequest.status == "open", User.is_banned.is_(False))
+         .order_by(ServiceRequest.created_at.desc()).limit(limit))
+    if category_id:
+        q = q.where(ServiceRequest.category_id == category_id)
+    out = []
+    for req in (await s.execute(q)).scalars():
+        d = distance_between(viewer.lat, viewer.lon, req.lat, req.lon)
+        if d is None and same_city(viewer.city, viewer.country, req.city, req.country):
+            d = 0.0
+        out.append((req, d))
+    # mesma região primeiro (até 100 km), depois o resto por data
+    out.sort(key=lambda x: (x[1] is None or x[1] > 100, x[1] if x[1] is not None and x[1] <= 100 else 0,
+                            -x[0].created_at.timestamp()))
+    return out
+
+
+async def market_providers(s: AsyncSession, viewer: User, limit: int = 300) -> list[tuple[ProviderProfile, User, float | None]]:
+    q = (select(ProviderProfile, User).join(User, User.id == ProviderProfile.user_id)
+         .where(User.is_banned.is_(False), User.is_provider.is_(True)).limit(limit))
+    out = []
+    for prof, user in (await s.execute(q)).all():
+        d = distance_between(viewer.lat, viewer.lon, user.lat, user.lon)
+        if d is None and same_city(viewer.city, viewer.country, user.city, user.country):
+            d = 0.0
+        out.append((prof, user, d))
+    out.sort(key=lambda x: _rank_key(x[0], x[1], x[2]))
+    return out
+
+
 async def recompute_rating(s: AsyncSession, provider_id: int) -> None:
     avg, n = (await s.execute(select(func.avg(Review.rating), func.count(Review.id))
                               .where(Review.provider_id == provider_id, Review.hidden.is_(False)))).one()

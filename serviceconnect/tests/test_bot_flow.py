@@ -131,6 +131,18 @@ async def test_end_to_end_marketplace(db, fake_bot):
     notif = session.texts_to(PRO)[before:]
     assert any(t("new_request_notify", "pt") in x for x in notif)
 
+    # ---- marketplace: qualquer pessoa vê os anúncios abertos e os profissionais
+    await h.text(PRO, t("menu.market", "pt"))
+    assert "mk:r:0:0" in h.last_markup_callbacks(PRO)
+    await h.click(PRO, "mk:r:0:0")
+    assert any("Limpeza completa" in x for x in session.texts_to(PRO)[-1:])
+    assert f"jb:{req.id}" in h.last_markup_callbacks(PRO)
+    await h.click(PRO, "mk:f")
+    await h.click(PRO, f"mk:r:{cats['plumbing']}:0")
+    assert "mk:f" in h.last_markup_callbacks(PRO)  # nenhum anúncio nessa categoria
+    await h.click(CLIENT, "mk:p:0")
+    assert f"pv:{prof.id}" in h.last_markup_callbacks(CLIENT)
+
     # ---- profissional vê trabalhos e envia orçamento
     await h.text(PRO, t("menu.jobs", "pt"))
     assert f"jb:{req.id}" in h.last_markup_callbacks(PRO)

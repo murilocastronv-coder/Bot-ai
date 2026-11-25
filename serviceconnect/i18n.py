@@ -7,6 +7,31 @@ LANG_NAMES = {"pt": "🇵🇹 Português", "en": "🇬🇧 English", "fr": "🇫
 # chave: (pt, en, fr, es)
 _T: dict[str, tuple[str, str, str, str]] = {
     # ---------- menu principal ----------
+    "menu.market": ("🛒 Marketplace", "🛒 Marketplace", "🛒 Marketplace", "🛒 Marketplace"),
+    "market.title": ("🛒 <b>Marketplace ServiceConnect</b>\nVeja quem está procurando serviço agora e os profissionais disponíveis 👇",
+                     "🛒 <b>ServiceConnect Marketplace</b>\nSee who is looking for a service right now and the available professionals 👇",
+                     "🛒 <b>Marketplace ServiceConnect</b>\nVoyez qui cherche un service en ce moment et les professionnels disponibles 👇",
+                     "🛒 <b>Marketplace ServiceConnect</b>\nMira quién busca un servicio ahora y los profesionales disponibles 👇"),
+    "market.btn_requests": ("📢 Pessoas procurando serviço", "📢 People looking for a service", "📢 Personnes qui cherchent un service", "📢 Personas buscando servicio"),
+    "market.btn_providers": ("🧰 Profissionais disponíveis", "🧰 Available professionals", "🧰 Professionnels disponibles", "🧰 Profesionales disponibles"),
+    "market.btn_filter": ("🏷 Filtrar por categoria", "🏷 Filter by category", "🏷 Filtrer par catégorie", "🏷 Filtrar por categoría"),
+    "market.btn_all": ("🌍 Todas as categorias", "🌍 All categories", "🌍 Toutes les catégories", "🌍 Todas las categorías"),
+    "market.requests_title": ("📢 <b>{n}</b> anúncio(s) de pessoas procurando serviço{cat} — toque para ver e enviar orçamento:",
+                              "📢 <b>{n}</b> post(s) from people looking for a service{cat} — tap to view and send a quote:",
+                              "📢 <b>{n}</b> annonce(s) de personnes qui cherchent un service{cat} — touchez pour voir et envoyer un devis :",
+                              "📢 <b>{n}</b> anuncio(s) de personas buscando servicio{cat} — toca para ver y enviar presupuesto:"),
+    "market.no_requests": ("Ainda não há anúncios abertos{cat}. Seja o primeiro: «📢 Publicar um serviço».",
+                           "No open posts yet{cat}. Be the first: «📢 Post a job».",
+                           "Aucune annonce ouverte{cat}. Soyez le premier : « 📢 Publier une demande ».",
+                           "Aún no hay anuncios abiertos{cat}. Sé el primero: «📢 Publicar un servicio»."),
+    "market.providers_title": ("🧰 <b>{n}</b> profissional(is) no ServiceConnect (mais próximos primeiro):",
+                               "🧰 <b>{n}</b> professional(s) on ServiceConnect (nearest first):",
+                               "🧰 <b>{n}</b> professionnel(s) sur ServiceConnect (les plus proches d'abord) :",
+                               "🧰 <b>{n}</b> profesional(es) en ServiceConnect (más cercanos primero):"),
+    "market.no_providers": ("Ainda não há profissionais cadastrados. Crie o seu perfil em «👤 Meu perfil».",
+                            "No professionals yet. Create yours in «👤 My profile».",
+                            "Pas encore de professionnels. Créez votre profil dans « 👤 Mon profil ».",
+                            "Aún no hay profesionales. Crea tu perfil en «👤 Mi perfil»."),
     "menu.find": ("🔎 Encontrar profissional", "🔎 Find a professional", "🔎 Trouver un professionnel", "🔎 Encontrar profesional"),
     "menu.publish": ("📢 Publicar um serviço", "📢 Post a job", "📢 Publier une demande", "📢 Publicar un servicio"),
     "menu.jobs": ("💼 Encontrar trabalho", "💼 Find work", "💼 Trouver du travail", "💼 Encontrar trabajo"),
@@ -430,7 +455,7 @@ def all_variants(key: str) -> set[str]:
     return set(_T[key])
 
 
-MENU_KEYS = ("menu.find", "menu.publish", "menu.jobs", "menu.profile", "menu.requests", "menu.messages",
+MENU_KEYS = ("menu.market", "menu.find", "menu.publish", "menu.jobs", "menu.profile", "menu.requests", "menu.messages",
              "menu.reviews", "menu.location", "menu.invite", "menu.language", "menu.support")
 
 # texto do botão (qualquer idioma) -> chave

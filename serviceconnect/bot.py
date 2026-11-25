@@ -167,7 +167,7 @@ async def _tell(event: TelegramObject, text: str) -> None:
 
 # ======================================================================= utilitários
 def menu_kb(lang: str) -> ReplyKeyboardMarkup:
-    keys = ["menu.find", "menu.publish", "menu.jobs", "menu.profile", "menu.requests", "menu.messages",
+    keys = ["menu.market", "menu.find", "menu.publish", "menu.jobs", "menu.profile", "menu.requests", "menu.messages",
             "menu.reviews", "menu.location", "menu.invite", "menu.language", "menu.support"]
     rows = [[KeyboardButton(text=t(keys[i], lang)) for i in range(j, min(j + 2, len(keys)))] for j in range(0, len(keys), 2)]
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, is_persistent=True)
@@ -511,7 +511,7 @@ async def on_menu(m: Message, state: FSMContext, s, user: User, lang: str, bot: 
         return
     key = MENU_LOOKUP[m.text]
     handler = {
-        "menu.find": menu_find, "menu.publish": menu_publish, "menu.jobs": menu_jobs, "menu.profile": menu_profile,
+        "menu.market": menu_market, "menu.find": menu_find, "menu.publish": menu_publish, "menu.jobs": menu_jobs, "menu.profile": menu_profile,
         "menu.requests": menu_requests, "menu.messages": menu_messages, "menu.reviews": menu_reviews,
         "menu.location": menu_location, "menu.invite": menu_invite, "menu.language": menu_language,
         "menu.support": menu_support,
@@ -799,6 +799,78 @@ async def notify_new_request(bot: Bot, s, req: ServiceRequest) -> int:
         await asyncio.sleep(0.04)  # respeita os limites do Telegram
     req.notified_count = sent
     return sent
+
+
+# ----------------------------------------------------------------------- 🛒 marketplace (mural público)
+async def menu_market(m: Message, lang: str, **_):
+    await m.answer(t("market.title", lang), reply_markup=ikb([(t("market.btn_requests", lang), "mk:r:0:0")],
+                                                             [(t("market.btn_providers", lang), "mk:p:0")],
+                                                             [(t("market.btn_filter", lang), "mk:f")]))
+
+
+@router.callback_query(F.data == "mk:f")
+async def cb_market_filter(c: CallbackQuery, s, lang: str):
+    await c.answer()
+    kb = InlineKeyboardBuilder()
+    kb.button(text=t("market.btn_all", lang), callback_data="mk:r:0:0")
+    for cat in await sv.list_categories(s):
+        kb.button(text=cat.label(lang), callback_data=f"mk:r:{cat.id}:0")
+    kb.adjust(2)
+    await c.message.answer(t("choose_category", lang), reply_markup=kb.as_markup())
+
+
+@router.callback_query(F.data.startswith("mk:r:"))
+async def cb_market_requests(c: CallbackQuery, s, user: User, lang: str):
+    _, _, cat_id, offset = (parts(c) + ["0", "0"])[:4]
+    cat_id, offset = max(0, as_int(cat_id)), max(0, as_int(offset))
+    cat = await s.get(Category, cat_id) if cat_id else None
+    cat_txt = f" · {cat.label(lang)}" if cat else ""
+    rows = await sv.market_requests(s, user, cat_id or None)
+    await c.answer()
+    if not rows:
+        await c.message.answer(t("market.no_requests", lang, cat=cat_txt),
+                               reply_markup=ikb([(t("market.btn_filter", lang), "mk:f")]))
+        return
+    page = rows[offset:offset + 10]
+    lines = [t("market.requests_title", lang, n=len(rows), cat=cat_txt)]
+    kb = InlineKeyboardBuilder()
+    for req, d in page:
+        rc = await s.get(Category, req.category_id)
+        where = e(req.city or "—") + (f" ({fmt_km(d, lang)})" if d else "")
+        lines.append(f"\n<b>#{req.id}</b> {rc.label(lang) if rc else ''} · {urgency_label(req.urgency, lang)}\n"
+                     f"📝 {e(cut(req.description, 120))}\n📍 {where} · 💶 {e(req.budget or t('not_specified', lang))}"
+                     f" · 🕒 {req.created_at:%d/%m}")
+        kb.button(text=f"#{req.id} {cut(req.description, 24)}", callback_data=f"jb:{req.id}")
+    kb.adjust(2)
+    nav = []
+    if offset + 10 < len(rows):
+        nav.append(InlineKeyboardButton(text=t("btn.more", lang), callback_data=f"mk:r:{cat_id}:{offset + 10}"))
+    nav.append(InlineKeyboardButton(text=t("market.btn_filter", lang), callback_data="mk:f"))
+    kb.row(*nav)
+    await c.message.answer("\n".join(lines)[:4000], reply_markup=kb.as_markup())
+
+
+@router.callback_query(F.data.startswith("mk:p:"))
+async def cb_market_providers(c: CallbackQuery, s, user: User, lang: str):
+    offset = max(0, as_int(parts(c)[2]))
+    rows = [r for r in await sv.market_providers(s, user) if r[1].id != user.id]
+    await c.answer()
+    if not rows:
+        await c.message.answer(t("market.no_providers", lang))
+        return
+    lines = [t("market.providers_title", lang, n=len(rows))]
+    kb = InlineKeyboardBuilder()
+    for i, (prof, pu, d) in enumerate(rows[offset:offset + 10], start=offset + 1):
+        badge = " ✅" if prof.verified else ""
+        rating = f"⭐{prof.rating_avg:.1f} ({prof.rating_count})" if prof.rating_count else "🆕"
+        cats = await cat_names(s, (prof.category_ids or [])[:3], lang)
+        lines.append(f"\n{i}. <b>{e(prof.business_name or pu.name)}</b>{badge} · {rating}\n🏷 {cats}\n"
+                     f"📍 {e(pu.city or '—')}" + (f" ({fmt_km(d, lang)})" if d else "") + f" · 💶 {e(price_text(prof, lang))}")
+        kb.button(text=f"{i}. {cut(prof.business_name or pu.name, 28)}", callback_data=f"pv:{prof.id}")
+    kb.adjust(2)
+    if offset + 10 < len(rows):
+        kb.row(InlineKeyboardButton(text=t("btn.more", lang), callback_data=f"mk:p:{offset + 10}"))
+    await c.message.answer("\n".join(lines)[:4000], reply_markup=kb.as_markup())
 
 
 # ----------------------------------------------------------------------- 💼 encontrar trabalho
